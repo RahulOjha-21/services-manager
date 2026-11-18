@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <form class="login-card" method="post" action="{{ url_for('web.login') }}" autocomplete="on">
+    <div class="login-head">
+      <span class="brand-mark" aria-hidden="true"><svg><use href="#i-terminal"/></svg></span>
+      <div>
+        <h1>Sign in</h1>
+        <p class="muted">Services Manager · {{ hostname }}</p>
+      </div>
+    </div>
+    {% with messages = get_flashed_messages() %}
+      {% for m in messages %}<div class="notice danger">{{ m }}</div>{% endfor %}
+    {% endwith %}
+    {% if no_users %}
+      <div class="notice">No user accounts exist yet. Create one on the server:<br>
+        <code>.venv/bin/python manage.py add-user admin --role admin</code></div>
+    {% endif %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <label class="field">Username
+      <input class="input" name="username" autocomplete="username" required autofocus>
+    </label>
+    <label class="field">Password
+      <input class="input" name="password" type="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn btn-primary login-btn" type="submit">Sign in</button>
+    <p class="muted small">Accounts are managed by an administrator with <code>manage.py</code>.</p>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Events{% endblock %}
+{% block page_id %}events{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Events</h1>
+    <p class="muted">Who started or stopped what, crashes, health changes and sign-ins. Kept in <code>logs/events.jsonl</code>.</p>
+  </div>
+  <div class="head-tools">
+    <select id="f-service" class="input" aria-label="Service">
+      <option value="">All services</option>
+      {% for s in services %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+    </select>
+    <select id="f-level" class="input" aria-label="Level">
+      <option value="">All levels</option>
+      <option value="error">Errors</option>
+      <option value="warning">Warnings</option>
+      <option value="success">Success</option>
+      <option value="info">Info</option>
+    </select>
+    <input id="f-search" class="input" type="search" placeholder="Search…  ( / )" aria-label="Search events">
+  </div>
+</div>
+
+<div class="panel table-panel">
+  <table class="table events-table">
+    <thead><tr><th>Time</th><th>Service</th><th>Event</th><th>Details</th><th>User</th></tr></thead>
+    <tbody id="events-body"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/events.js') }}"></script>{% endblock %}

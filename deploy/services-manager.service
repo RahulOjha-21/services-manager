@@ -1,0 +1,22 @@
+[Unit]
+Description=Elecon FMS Services Manager (web UI for ROS 2 / script services)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=amr-wipro
+WorkingDirectory=/home/amr-wipro/Elecon_FMS/Services_Manager
+ExecStart=/home/amr-wipro/Elecon_FMS/Services_Manager/.venv/bin/python run.py
+Environment=SM_PORT=5000
+# Needed only if a managed service opens windows (Gazebo / RViz):
+# Environment=DISPLAY=:0
+# Environment=XAUTHORITY=/home/amr-wipro/.Xauthority
+# Stop children gracefully: the app handles SIGTERM and Ctrl+C's its processes.
+KillMode=mixed
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,215 @@
+# =============================================================================
+#  Services Manager - service registry
+# =============================================================================
+#  Every command the web UI can run / monitor is declared here.
+#  To add a new command: copy a block under `services:` and edit it.
+#  After editing, click "Reload config" on the dashboard (admin) - only the
+#  services you changed are restarted.
+#
+#  Service fields
+#    id                  unique, lowercase (a-z 0-9 _ -), used in URLs
+#    name                display name
+#    description         short text shown on the card
+#    group               cards are grouped by this label on the dashboard
+#    profile             name (or list of names) from `profiles:` below
+#    cwd                 working directory ("~" is expanded)
+#    command             the long-running command (same as you type in a terminal)
+#    source              extra scripts to `source` before the command
+#    env                 extra environment variables
+#    autostart           start automatically when the Services Manager starts
+#    restart_on_failure  restart automatically if it crashes (non-zero exit)
+#    max_restarts        give up after this many automatic restarts
+#    restart_delay       seconds to wait before an automatic restart
+#    stop_timeout        seconds to wait after Ctrl+C (SIGINT) before SIGTERM/SIGKILL
+#    detect_external     regex (pgrep -f) to detect the same program started
+#                        from a terminal, so it is never started twice
+#    critical            (#12) controls physical equipment: extra confirmation
+#    health              (#2) port / http / log_ready / log_unhealthy / grace / interval
+#    links               (#3) "Open" buttons: url (may use {host}) and/or from_log regex
+#    actions             one-shot commands shown as buttons
+#    monitors            background commands whose output is shown as a live value
+# =============================================================================
+
+settings:
+  log_dir: logs                 # relative to the project root
+  log_buffer_lines: 3000        # lines kept in memory per service (for the web console)
+  log_file_max_mb: 5            # per-service log file rotation
+  log_file_backups: 3
+  metrics_interval: 2           # (#7) seconds between CPU / memory samples
+  auth:                         # (#13) the manager's own user accounts (not PC users)
+    enabled: true
+    users_file: users.yaml      # relative to this folder; manage with manage.py
+    session_hours: 12
+
+# Reusable environments. Non-interactive shells do NOT read ~/.bashrc, so
+# everything the terminal gets from it is loaded explicitly here.
+# Relative paths below are relative to this config folder (config/env/...).
+profiles:
+  ros2:
+    source:
+      - /opt/ros/jazzy/setup.bash
+      - ~/rmf_ws_h6/install/setup.bash
+      - env/pythonpath.sh
+    env:
+      PYTHONUNBUFFERED: "1"               # show prints immediately
+      RCUTILS_COLORIZED_OUTPUT: "1"       # (#9) coloured log levels in the web console
+      RCUTILS_LOGGING_BUFFERED_STREAM: "0"
+      # ROS_DOMAIN_ID: "0"
+
+  # Node.js comes from nvm and pnpm from ~/.local/share/pnpm (both set up in ~/.bashrc).
+  node:
+    source:
+      - ~/.nvm/nvm.sh
+      - env/pnpm.sh
+    env:
+      FORCE_COLOR: "1"                    # (#9) keep npm / pnpm / vite colours
+
+# Listed in the usual start-up order.
+services:
+  # 1 ------------------------------------------------------------------------
+  - id: rmf_office
+    name: RMF Office Launch
+    description: Open-RMF core (ros2 launch rmf_demos office.launch.xml).
+    group: RMF Core
+    profile: ros2
+    cwd: ~/rmf_ws_h6
+    command: ros2 launch rmf_demos office.launch.xml
+    stop_timeout: 20
+    detect_external: 'ros2 launch rmf_demos office\.launch\.xml'
+
+  # 2 ------------------------------------------------------------------------
+  - id: fleet_adapter
+    name: Fleet Adapter
+    description: fleet_adapter_template with src/config.yaml and src/0.yaml.
+    group: RMF Core
+    profile: ros2
+    cwd: ~/fleet_adapter_template
+    source: install/setup.bash            # relative to cwd
+    command: ros2 run fleet_adapter_template fleet_adapter_template -c ./src/config.yaml -n ./src/0.yaml
+    stop_timeout: 15
+    detect_external: 'fleet_adapter_template -c '
+    critical: true                        # (#12) drives the robots
+
+  # 3 ------------------------------------------------------------------------
+  - id: rmf_dashboard
+    name: RMF Dashboard
+    description: rmf-dashboard-framework demo (pnpm start:example examples/demo).
+    group: RMF Web
+    profile: [ros2, node]
+    cwd: ~/rmf-web/packages/rmf-dashboard-framework
+    command: pnpm start:example examples/demo
+    stop_timeout: 10
+    detect_external: 'rmf-dashboard-framework.*vite.* examples/demo'
+    health:
+      log_ready: 'ready in'               # vite: "VITE vX ready in N ms"
+      grace: 240                          # the build step runs first
+    links:
+      - label: Dashboard
+        from_log: 'Local:\s+(https?://\S+)'
+        url: 'http://{host}:5173/'
+
+  # 4 ------------------------------------------------------------------------
+  - id: rmf_api_server
+    name: RMF API Server
+    description: rmf-web api-server (pnpm start).
+    group: RMF Web
+    profile: [ros2, node]
+    cwd: ~/rmf-web/packages/api-server
+    command: pnpm start
+    stop_timeout: 15
+    detect_external: 'python -m api_server'
+    health:
+      port: 8000
+      grace: 120
+    links:
+      - label: API docs
+        url: 'http://{host}:8000/docs'
+
+  # 5 ------------------------------------------------------------------------
+  - id: task_adapter
+    name: Task Adapter Mockup
+    description: Task adapter API (uvicorn, port 5500, auto-reload).
+    group: Adapters
+    profile: ros2
+    cwd: ~/task_adapter_mockup
+    command: .venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 5500 --reload
+    stop_timeout: 10
+    detect_external: 'uvicorn main:app .*--port 5500'
+    health:
+      port: 5500
+      grace: 45
+    links:
+      - label: API docs
+        url: 'http://{host}:5500/docs'
+
+  # 6 ------------------------------------------------------------------------
+  - id: door_control
+    name: Door Control
+    description: ROS 2 node bridging the door PLC (Modbus TCP) with RMF door requests.
+    group: Facility
+    profile: ros2
+    cwd: ~/amr-server/door-new
+    command: python3 door_control.py
+    stop_timeout: 10
+    detect_external: 'python3? .*door_control\.py'
+    critical: true                        # (#12) operates the door PLC
+    health:
+      log_ready: 'Connected to door PLC'
+      log_unhealthy: 'Cannot connect to door PLC|Door PLC disconnected'
+      grace: 30
+
+  # 7 ------------------------------------------------------------------------
+  - id: kiosk_backend
+    name: Kiosk UI Backend
+    description: FastAPI backend (uvicorn, port 8100, auto-reload).
+    group: Kiosk UI
+    profile: ros2
+    cwd: ~/Elecon_FMS/Elecon_UI/Elecon-kiosk-ui/backend
+    command: .venv/bin/python -m uvicorn app.api.main:app --host 0.0.0.0 --port 8100 --reload
+    stop_timeout: 10
+    detect_external: 'uvicorn app\.api\.main:app .*--port 8100'
+    health:
+      port: 8100
+      http: 'http://127.0.0.1:8100/docs'
+      grace: 45
+    links:
+      - label: API docs
+        url: 'http://{host}:8100/docs'
+
+  # 8 ------------------------------------------------------------------------
+  - id: kiosk_frontend
+    name: Kiosk UI Frontend
+    description: Vite dev server (npm run dev).
+    group: Kiosk UI
+    profile: node
+    cwd: ~/Elecon_FMS/Elecon_UI/Elecon-kiosk-ui/frontend
+    command: npm run dev
+    stop_timeout: 10
+    detect_external: 'Elecon-kiosk-ui/frontend/node_modules/.*vite'
+    health:
+      log_ready: 'ready in'
+      grace: 90
+    links:
+      - label: Kiosk UI
+        from_log: 'Local:\s+(https?://\S+)'
+
+
+# ---------------------------------------------------------------------------
+#  Example: another service (uncomment and adapt)
+# ---------------------------------------------------------------------------
+#  - id: amr_tools
+#    name: AMR Tools
+#    description: Fleet helper commands
+#    group: Fleet
+#    profile: ros2
+#    command: ros2 topic echo /docking_state std_msgs/msg/String --field data
+#    actions:
+#      - id: go_home
+#        label: Send AMR Home
+#        confirm: true
+#        command: ros2 run rmf_demos_tasks dispatch_go_to_place -p AMR_HOME
+#      - id: dock_ok
+#        label: Mark Docked
+#        command: >-
+#          ros2 topic pub --once /docking_state std_msgs/String "{data: 'successful_dock'}"
+#          --qos-durability transient_local --qos-reliability reliable

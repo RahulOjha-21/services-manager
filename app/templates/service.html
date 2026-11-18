@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ service.name }}{% endblock %}
+{% block page_id %}service{% endblock %}
+{% block content %}
+<a class="back" href="{{ url_for('web.dashboard') }}"><svg><use href="#i-back"/></svg> All services</a>
+
+<div id="svc" data-sid="{{ service.id }}">
+  <div class="detail-head">
+    <div class="detail-title">
+      <h1>{{ service.name }}</h1>
+      <span class="badge" data-f="badge">…</span>
+      <span class="hbadge" data-f="hbadge" hidden></span>
+      {% if service.critical %}<span class="chip chip-danger" title="Controls physical equipment"><svg><use href="#i-warn"/></svg>Equipment</span>{% endif %}
+    </div>
+    <div class="controls">
+      <span class="links" data-f="links"></span>
+      <button class="btn btn-success" data-op="start" data-min-role="operator" title="Start (s)"><svg><use href="#i-play"/></svg>Start</button>
+      <button class="btn btn-danger" data-op="stop" data-min-role="operator" title="Stop (x)"><svg><use href="#i-stop"/></svg><span>Stop</span></button>
+      <button class="btn btn-secondary" data-op="restart" data-min-role="operator" title="Restart (r)"><svg><use href="#i-restart"/></svg>Restart</button>
+    </div>
+  </div>
+  {% if service.description %}<p class="muted lead">{{ service.description }}</p>{% endif %}
+  <div class="notice" data-f="notice" hidden></div>
+
+  <div class="detail-grid">
+    <aside class="side">
+      <!-- (#2) health -->
+      <section class="panel" data-f="health-panel" hidden>
+        <h2><svg><use href="#i-heart"/></svg>Health</h2>
+        <div class="checks" data-f="checks"></div>
+      </section>
+
+      <!-- (#7) resources -->
+      <section class="panel">
+        <h2>Resources</h2>
+        <div class="res-grid">
+          <div class="res"><span class="res-label">CPU</span><span class="res-value" data-f="cpu">–</span><div class="chart" data-f="cpu-chart"></div></div>
+          <div class="res"><span class="res-label">Memory</span><span class="res-value" data-f="mem">–</span><div class="chart" data-f="mem-chart"></div></div>
+        </div>
+        <div class="muted small" data-f="procs"></div>
+      </section>
+
+      <section class="panel" data-f="monitors-panel" hidden>
+        <h2>Live values</h2>
+        <div class="monitors" data-f="monitors"></div>
+      </section>
+
+      <section class="panel" data-f="actions-panel" hidden>
+        <h2>Actions</h2>
+        <div class="action-list" data-f="actions"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Process</h2>
+        <dl class="kv">
+          <dt>PID</dt><dd data-f="pid">–</dd>
+          <dt>Uptime</dt><dd data-f="uptime">–</dd>
+          <dt>Started</dt><dd data-f="started">–</dd>
+          <dt>Last exit code</dt><dd data-f="exit">–</dd>
+          <dt>Errors / warnings</dt><dd data-f="counts">–</dd>
+          <dt>Crashes today</dt><dd data-f="crashes">–</dd>
+          <dt>Auto-restart</dt><dd data-f="autorestart">–</dd>
+          <dt>Working dir</dt><dd><code data-f="cwd">–</code></dd>
+          <dt>Command</dt><dd><code data-f="command">–</code></dd>
+        </dl>
+      </section>
+
+      <!-- (#8) history -->
+      <section class="panel">
+        <h2 class="panel-head">History <a href="{{ url_for('web.events') }}?service={{ service.id }}" class="small">View all</a></h2>
+        <ol class="timeline" data-f="history"><li class="muted small">Loading…</li></ol>
+      </section>
+    </aside>
+
+    <section class="console-wrap panel">
+      <div class="console-bar">
+        <div class="console-title">
+          <svg><use href="#i-terminal"/></svg><h2>Console</h2>
+          <span class="stream-state" id="stream-state" data-state="connecting">connecting</span>
+        </div>
+        <div class="console-tools">
+          <select id="level-filter" class="input input-sm" aria-label="Level filter">
+            <option value="all">All output</option>
+            <option value="warn">Warnings &amp; errors</option>
+            <option value="error">Errors only</option>
+          </select>
+          <input id="log-search" class="input input-sm" type="search" placeholder="Search…" aria-label="Search logs">
+          <!-- (#9) error navigation -->
+          <div class="err-nav" title="Jump between errors (e / E)">
+            <button class="icon-btn" id="err-prev" type="button" aria-label="Previous error"><svg><use href="#i-up"/></svg></button>
+            <span id="err-count" class="err-count">0 errors</span>
+            <button class="icon-btn" id="err-next" type="button" aria-label="Next error"><svg><use href="#i-down"/></svg></button>
+          </div>
+          <button class="icon-btn" id="time-mode" type="button" title="Timestamps: clock / time ago (t)"><svg><use href="#i-clock"/></svg></button>
+          <label class="toggle"><input type="checkbox" id="wrap" checked> Wrap</label>
+          <button class="icon-btn" id="copy-last" type="button" title="Copy the last 100 visible lines"><svg><use href="#i-copy"/></svg></button>
+          <a class="icon-btn" id="download" title="Download full log file"><svg><use href="#i-download"/></svg></a>
+          <button class="icon-btn" id="clear" type="button" data-min-role="operator" title="Clear console"><svg><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+      <div class="console wrap" id="console" tabindex="0" aria-label="Console output"></div>
+      <button class="jump" id="jump" hidden><svg><use href="#i-down"/></svg> New output — jump to latest</button>
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/service.js') }}"></script>{% endblock %}

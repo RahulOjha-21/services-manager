@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Services{% endblock %}
+{% block page_id %}dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Services</h1>
+    <p class="muted">Start, stop and monitor the commands configured in <code>config/services.yaml</code>.</p>
+  </div>
+  <div class="head-tools">
+    <input id="search" class="input search" type="search" placeholder="Filter services…  ( / )" autocomplete="off" aria-label="Filter services">
+    <!-- (#10) view switch -->
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" class="seg-btn" data-view="cards" title="Card view (v)"><svg><use href="#i-grid"/></svg>Cards</button>
+      <button type="button" class="seg-btn" data-view="table" title="Table view (v)"><svg><use href="#i-list"/></svg>Table</button>
+    </div>
+    <!-- (#4) reload config (admin) -->
+    <button type="button" class="btn btn-secondary" id="reload-config" data-min-role="admin" title="Re-read services.yaml; only changed services are restarted">
+      <svg><use href="#i-reload"/></svg>Reload config</button>
+  </div>
+</div>
+
+<section class="stats" id="stats">
+  <button class="stat" data-filter="all"><span class="stat-label">Total</span><span class="stat-value" data-stat="total">–</span></button>
+  <button class="stat stat-success" data-filter="running"><span class="stat-label">Running</span><span class="stat-value" data-stat="running">–</span></button>
+  <button class="stat stat-info" data-filter="healthy"><span class="stat-label">Healthy</span><span class="stat-value" data-stat="healthy">–</span></button>
+  <button class="stat stat-neutral" data-filter="stopped"><span class="stat-label">Stopped</span><span class="stat-value" data-stat="stopped">–</span></button>
+  <button class="stat stat-danger" data-filter="problems"><span class="stat-label">Problems</span><span class="stat-value" data-stat="problems">–</span></button>
+</section>
+
+<div id="services" class="groups">
+  <!-- (#14) loading placeholders -->
+  <div class="cards">
+    <div class="card skeleton"></div><div class="card skeleton"></div><div class="card skeleton"></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>{% endblock %}

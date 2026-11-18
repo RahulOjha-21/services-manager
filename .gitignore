@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Runtime output (logs, event history, server output) - keep only the folder
+logs/*
+!logs/.gitkeep
+
+# Secrets - never commit
+config/users.yaml
+instance/
+.env
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
