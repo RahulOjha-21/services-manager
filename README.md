@@ -10,6 +10,16 @@ action is recorded with the user who performed it, and alerts fire when somethin
 All commands are declared in one YAML file, so adding a new one is a configuration change
 with no code to write.
 
+## Screenshots
+
+**Card view:** services grouped by area, with live status, health, CPU and memory charts, error and warning counts, and Start / Stop / Restart controls. Equipment services are tagged so you notice them before acting.
+
+![Services Manager - card view](Images/Services_dashboard2.png)
+
+**Table view:** all services in one table showing uptime, CPU, memory, error and warning counts, *Open* links to each service's web UI or API docs, and controls.
+
+![Services Manager - table view](Images/Services_dashboard1.png)
+
 ---
 
 ## Contents
